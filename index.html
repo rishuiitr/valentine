@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Be My Valentine 💖</title>
+
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    background: #fff;
+  }
+
+  /* ===== BACKGROUND IMAGE LAYER ===== */
+  .bg-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .bg-slot {
+    position: absolute;
+    opacity: 0;
+    transition: opacity 2.5s ease; /* smoother fade */
+  }
+
+  .bg-slot img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    border-radius: 14px;
+  }
+
+  .bg-slot.show {
+    opacity: 1;
+  }
+
+ /* ===== SAFE POSITIONS (1 TOP, 1 BOTTOM, 3 LEFT, 3 RIGHT) ===== */
+
+/* Top (centered above dialog) */
+.p1 { top: 3%; left: 50%; transform: translateX(-50%); width: 180px; }
+
+/* Bottom (centered below dialog) */
+.p2 { bottom: 1%; left: 50%; transform: translateX(-50%); width: 170px; }
+
+/* Left side (top to bottom) */
+.p3 { top: 17%; left: 25%; width: 220px; }
+.p4 { top: 46%; left: 13%; width: 240px; }
+.p5 { top: 63%; left: 25%; width: 210px; }
+
+/* Right side (top to bottom) */
+.p6 { top: 17%; right: 23%; width: 230px; }
+.p7 { top: 46%; right: 13%; width: 210px; }
+.p8 { top: 63%; right: 23%; width: 240px; }
+
+.valentine-text {
+  color: #ff3366;
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.valentine-subtext {
+  font-size: 15px;
+  color: #555;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+
+  /* ===== CENTER CARD ===== */
+  .card-wrapper {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+  }
+
+  .container {
+    background: white;
+    padding: 36px 34px;
+    border-radius: 32px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.35);
+    text-align: center;
+    width: min(90%, 420px);
+  }
+
+  h1 {
+    color: #ff3366;
+    font-size: 26px;
+    margin-bottom: 10px;
+  }
+
+  .tease {
+    font-size: 16px;
+    color: #777;
+    font-style: italic;
+    margin-bottom: 26px;
+  }
+
+  .buttons {
+    position: relative;
+    height: 110px;
+  }
+
+  button {
+    padding: 12px 30px;
+    font-size: 18px;
+    border-radius: 30px;
+    border: none;
+    cursor: pointer;
+  }
+
+  #yesBtn {
+    background: #ff3366;
+    color: white;
+  }
+
+  #noBtn {
+    background: #ddd;
+    color: #333;
+    position: absolute;
+    left: 55%;
+    top: 20px;
+    transition: left 0.45s ease, top 0.45s ease;
+  }
+
+  .result {
+    display: none;
+    margin-top: 20px;
+  }
+
+  .result img {
+    width: 160px;
+    margin-top: 15px;
+  }
+
+  /* ===== MOBILE TUNING ===== */
+  @media (max-width: 600px) {
+    .bg-slot {
+      width: 150px !important;
+    }
+    h1 { font-size: 22px; }
+  }
+
+  .confetti {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  background-color: #ff3366;
+  top: -10px;
+  animation: confettiFall 3.5s linear forwards;
+  z-index: 10;
+}
+
+@keyframes confettiFall {
+  to {
+    transform: translateY(110vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- BACKGROUND IMAGE LAYER -->
+<div class="bg-layer" id="bgLayer"></div>
+
+<!-- MUSIC -->
+<audio autoplay loop>
+  <source src="audio/music.mp3" type="audio/mpeg">
+</audio>
+
+<!-- CENTER CARD -->
+<div class="card-wrapper">
+  <div class="container">
+    <h1 id="mainTitle">WILL YOU BE MY VALENTINE, SHRUTIKA? 💘</h1>
+
+    <div class="tease">I know you can’t resist me 😌</div>
+
+    <div class="buttons" id="buttons">
+      <button id="yesBtn">YES 💖</button>
+      <button id="noBtn">NO 🥺</button>
+    </div>
+    
+    <div class="result" id="result">
+  <h2 class="valentine-text">Happy Early Valentine’s Day 💘</h2>
+  <p class="valentine-subtext">
+    I’m really glad you’re here.  
+    You already made my day brighter ✨
+  </p>
+  <img src="images/panda.jpg" alt="Dancing Panda 🐼">
+</div>
+  </div>
+</div>
+<script>
+  const images = [
+    "images/bg1.jpg","images/bg2.jpg","images/bg3.jpg","images/bg4.jpg",
+    "images/bg5.jpg","images/bg6.jpg","images/bg7.jpg","images/bg8.jpg",
+    "images/bg9.jpg","images/bg10.jpg","images/bg11.jpg","images/bg12.jpg",
+    "images/bg13.jpg","images/bg14.jpg","images/bg15.jpg","images/bg16.jpg"
+  ];
+
+  const positions = ["p1","p2","p3","p4","p5","p6","p7","p8"];
+  const bgLayer = document.getElementById("bgLayer");
+
+  let usedImages = [];
+  let slotIndex = 0;
+
+  function getNextImage() {
+    if (usedImages.length === images.length) {
+      usedImages = [];
+    }
+    const remaining = images.filter(img => !usedImages.includes(img));
+    const img = remaining[Math.floor(Math.random() * remaining.length)];
+    usedImages.push(img);
+    return img;
+  }
+
+  // Initialize 8 slots
+  positions.forEach(pos => {
+    const slot = document.createElement("div");
+    slot.className = `bg-slot ${pos} show`;
+    slot.innerHTML = `<img src="${getNextImage()}">`;
+    bgLayer.appendChild(slot);
+  });
+
+  const slots = document.querySelectorAll(".bg-slot");
+
+  // Change ONE image at a time
+  setInterval(() => {
+    const slot = slots[slotIndex];
+
+    slot.classList.remove("show");
+    setTimeout(() => {
+      slot.querySelector("img").src = getNextImage();
+      slot.classList.add("show");
+    }, 800);
+
+    slotIndex = (slotIndex + 1) % slots.length;
+  }, 3000); // one image every 3 seconds
+
+    // ===== RUNNING NO BUTTON (RESTORED) =====
+  const noBtn = document.getElementById("noBtn");
+  const yesBtn = document.getElementById("yesBtn");
+  const result = document.getElementById("result");
+  const buttons = document.getElementById("buttons");
+
+  let yesClicks = 0;
+  const yesTexts = [
+    "YES 💖",
+    "Are you sure? 😏",
+    "Really sure? 🥺",
+    "Last chance 😌",
+    "OKAY YES ❤️"
+  ];
+
+  // NO button runs away
+  noBtn.addEventListener("mouseenter", () => {
+  const boxRect = buttons.getBoundingClientRect();
+  const yesRect = yesBtn.getBoundingClientRect();
+  const noRect = noBtn.getBoundingClientRect();
+
+  const padding = 10; // safe space from edges
+  const safeGap = 20; // gap from YES button
+
+  const maxX = boxRect.width - noRect.width - padding;
+  const maxY = boxRect.height - noRect.height - padding;
+
+  let x, y, attempts = 0;
+
+  do {
+    x = Math.random() * maxX;
+    y = Math.random() * maxY;
+    attempts++;
+  } while (
+    attempts < 20 &&
+    Math.abs((x + noRect.width / 2) - (yesRect.left - boxRect.left + yesRect.width / 2)) < yesRect.width + safeGap &&
+    Math.abs((y + noRect.height / 2) - (yesRect.top - boxRect.top + yesRect.height / 2)) < yesRect.height + safeGap
+  );
+
+  noBtn.style.left = `${x}px`;
+  noBtn.style.top = `${y}px`;
+});
+
+  
+yesBtn.addEventListener("click", () => {
+  yesClicks++;
+  if (yesClicks < yesTexts.length) {
+    yesBtn.textContent = yesTexts[yesClicks];
+  } else {
+    buttons.style.display = "none";
+    result.style.display = "block";
+
+    // 👇 hide the main header when panda appears
+    document.getElementById("mainTitle").style.display = "none";
+
+    launchConfetti();
+  }
+});
+
+function launchConfetti() {
+  for (let i = 0; i < 80; i++) {
+    const confetti = document.createElement("div");
+    confetti.className = "confetti";
+    confetti.style.left = Math.random() * 100 + "vw";
+    confetti.style.backgroundColor =
+      ["#ff3366", "#ff99aa", "#ffd1dc"][Math.floor(Math.random() * 3)];
+    confetti.style.animationDelay = Math.random() * 0.5 + "s";
+    document.body.appendChild(confetti);
+
+    setTimeout(() => confetti.remove(), 4000);
+  }
+}
+
+
+</script>
+
+</body>
+</html>
